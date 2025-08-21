@@ -1,6 +1,17 @@
 import { Router } from "express";
 import Ticket from "../models/Ticket.js";
 import { auth, requireRole } from "../middleware/auth.js";
+import express from "express";
+import Ticket from "../models/Ticket.js";
+import { authMiddleware } from "../middleware/auth.js";
+
+
+/**
+ * @desc   Create new ticket
+ * @route  POST /api/tickets
+ * @access Authenticated user
+ */
+
 
 const router = Router();
 
@@ -35,6 +46,26 @@ router.get("/:id", auth, async (req, res) => {
   if (!t) return res.status(404).json({ error: "Not found" });
   // optional: restrict if user isn't owner/admin/agent assigned
   res.json(t);
+});
+
+router.post("/", authMiddleware, async (req, res) => {
+  try {
+    const { title, description, priority } = req.body;
+
+    const ticket = new Ticket({
+      title,
+      description,
+      priority: priority || "Low",
+      status: "Open",
+      createdBy: req.user.id,
+    });
+
+    await ticket.save();
+    res.status(201).json(ticket);
+  } catch (err) {
+    console.error("Create Ticket Error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
 export default router;
