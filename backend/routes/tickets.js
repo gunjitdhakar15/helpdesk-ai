@@ -1,68 +1,40 @@
-import express from "express";
+import { Router } from "express";
 import Ticket from "../models/Ticket.js";
-import authMiddleware from "../middleware/auth.js"; // protects routes
+import { auth, requireRole } from "../middleware/auth.js";
 
-const router = express.Router();
+const router = Router();
 
-/**
- * CREATE Ticket
- */
-router.post("/", authMiddleware, async (req, res) => {
-    try {
-        const { title, description } = req.body;
-
-        if (!title || !description) {
-            return res.status(400).json({ error: "Title and description required" });
-        }
-
-        // create ticket
-        const newTicket = await Ticket.create({
-            title,
-            description,
-            createdBy: req.user.id, // user id from JWT
-        });
-
-        // 👉 Call AI Stub here (for now just a placeholder)
-        // Later we'll plug real AI classification
-        newTicket.aiSuggestion = {
-            category: "other",
-            confidence: 0.5,
-        };
-        await newTicket.save();
-
-        return res.status(201).json(newTicket);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Server error" });
-    }
+// Create (you probably already have)
+router.post("/", auth, async (req, res) => {
+  const { title, description } = req.body;
+  const doc = await Ticket.create({ title, description, createdBy: req.user.id });
+  res.status(201).json(doc);
 });
 
-/**
- * GET all tickets (for logged-in user)
- */
-router.get("/", authMiddleware, async (req, res) => {
-    try {
-        const tickets = await Ticket.find({ createdBy: req.user.id }).populate("createdBy", "name email");
-        return res.status(200).json(tickets);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Server error" });
-    }
+// My tickets
+router.get("/mine", auth, async (req, res) => {
+  const items = await Ticket.find({ createdBy: req.user.id }).sort({ updatedAt: -1 });
+  res.json(items);
 });
 
-/**
- * GET single ticket by ID
- */
-router.get("/:id", authMiddleware, async (req, res) => {
-    try {
-        const ticket = await Ticket.findById(req.params.id).populate("createdBy", "name email");
-        if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+// Assigned (for agent)
+router.get("/assigned", auth, requireRole("agent", "admin"), async (req, res) => {
+  const items = await Ticket.find({ assignedTo: req.user.id }).sort({ updatedAt: -1 });
+  res.json(items);
+});
 
-        return res.status(200).json(ticket);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Server error" });
-    }
+// All (admin)
+router.get("/all", auth, requireRole("admin"), async (req, res) => {
+  const items = await Ticket.find().sort({ updatedAt: -1 });
+  res.json(items);
+});
+
+// Detail
+router.get("/:id", auth, async (req, res) => {
+  const t = await Ticket.findById(req.params.id);
+  if (!t) return res.status(404).json({ error: "Not found" });
+  // optional: restrict if user isn't owner/admin/agent assigned
+  res.json(t);
 });
 
 export default router;
