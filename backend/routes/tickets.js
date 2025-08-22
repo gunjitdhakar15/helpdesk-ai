@@ -2,7 +2,6 @@ import { Router } from "express";
 import Ticket from "../models/Ticket.js";
 import { auth, requireRole } from "../middleware/auth.js";
 import express from "express";
-import Ticket from "../models/Ticket.js";
 import { authMiddleware } from "../middleware/auth.js";
 
 
