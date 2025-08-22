@@ -1,6 +1,6 @@
 import express from "express";
 import Ticket from "../models/Ticket.js"; // ensure correct path
-import { authMiddleware } from "../middleware/auth.js"; // JWT auth
+import  authMiddleware from "../middleware/auth.js"; // JWT auth
 
 const router = express.Router();
 
