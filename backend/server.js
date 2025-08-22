@@ -13,18 +13,20 @@ import configRoutes from "./routes/config.js";
 dotenv.config();
 
 
-app.use("/api/kb", kbRoutes);
-app.use("/api/agent", agentRoutes);
-app.use("/api/config", configRoutes);
+
 
 
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 app.use("api/auth", authRoutes);
 app.use("api/tickets", ticketRoutes);
 app.use(cors({ origin: process.env.CORS_ORIGIN?.split(",") || "*", credentials: true }));
+app.use("/api/kb", kbRoutes);
+app.use("/api/agent", agentRoutes);
+app.use("/api/config", configRoutes);
 
 // connect to MongoDB
 mongoose.connect(process.env.MONGO_URI)
